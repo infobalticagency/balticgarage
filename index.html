@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Baltic Garage</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap');
 :root{--bg:#0e0e0f;--surface:#141415;--surface2:#1c1c1e;--border:#272729;--border2:#333336;--accent:#c8ff00;--accent-dim:rgba(200,255,0,0.08);--accent2:#ff6b35;--text:#f0f0f0;--muted:#6b6b72;--muted2:#9a9aa3;--radius:10px;--sidebar:220px}
@@ -176,6 +177,92 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:16px 0}
 .folder-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);margin-bottom:7px;cursor:pointer;transition:border-color .15s;animation:slideIn .15s ease}
 .folder-item:hover{border-color:var(--muted)}
 .vault-toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+/* ── RECHNUNGSERSTELLER (dunkles Tool-UI) ── */
+.inv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.inv-field{display:flex;flex-direction:column;gap:4px}
+.inv-field label{font-size:.62rem;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+.inv-field input,.inv-field textarea,.inv-field select{width:100%}
+.inv-field textarea{resize:vertical;min-height:60px;line-height:1.5}
+.inv-full{grid-column:1 / -1}
+.inv-logo-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:4px}
+#inv-logo-preview{min-width:120px;min-height:48px;display:flex;align-items:center;justify-content:center;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px}
+.inv-item-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.inv-it-sum{min-width:96px;text-align:right;font-size:.8rem;color:var(--accent);font-weight:500}
+.inv-it-del{background:none;border:1px solid var(--border2);border-radius:6px;color:var(--muted);cursor:pointer;padding:6px 9px;font-size:.78rem;transition:all .15s}
+.inv-it-del:hover{border-color:var(--accent2);color:var(--accent2)}
+.inv-add-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.inv-add-row select{flex:1;min-width:200px}
+.inv-total-bar{display:flex;justify-content:flex-end;gap:14px;align-items:baseline;margin-top:14px;font-family:'Syne',sans-serif}
+.inv-total-bar .lbl{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.inv-total-bar .val{font-size:1.4rem;font-weight:800;color:var(--accent)}
+.inv-hint-fixed{margin-top:12px;padding:9px 12px;border-radius:8px;background:var(--accent-dim);border:1px solid rgba(200,255,0,.18);font-size:.72rem;color:rgba(200,255,0,.8)}
+#inv-status,#offer-status{font-size:.72rem;margin-top:8px;min-height:1em}
+.inv-doc-wrap{background:#34343a;border-radius:var(--radius);padding:22px;overflow:auto;display:flex;justify-content:center}
+/* ── Weißes, druckfertiges Dokument (WYSIWYG = Druck-DOM) — geteilt ── */
+.bg-doc{background:#fff;color:#1a1a1a;width:794px;min-height:1123px;padding:56px 58px;font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;line-height:1.55;box-shadow:0 8px 34px rgba(0,0,0,.45);box-sizing:border-box}
+.bg-doc *{box-sizing:border-box}
+.doc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:28px;margin-bottom:30px}
+.doc-logo img{display:block;max-height:70px;max-width:200px}
+.doc-issuer{text-align:right;font-size:12px;color:#444}
+.doc-issuer>div{padding:1px 0}
+.doc-company{font-size:18px;font-weight:700;color:#111;margin-bottom:3px}
+.doc-legal{font-size:12px;font-weight:400;color:#777}
+.doc-title{font-size:26px;font-weight:700;letter-spacing:1px;color:#111;margin:0;text-transform:uppercase}
+.doc-recipient-row{display:flex;justify-content:space-between;gap:30px;margin:22px 0 26px}
+.doc-recipient{font-size:13px;max-width:55%}
+.doc-strong{font-weight:700}
+.doc-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:5px}
+.doc-meta{font-size:12px;min-width:250px}
+.doc-meta>div{display:flex;justify-content:space-between;gap:16px;padding:3px 0;border-bottom:1px solid #eee}
+.doc-meta span{color:#999}
+.doc-meta strong{color:#111;font-weight:600;text-align:right}
+.doc-period{font-size:12px;color:#444;margin:0 0 12px;font-style:italic}
+.doc-text{margin:13px 0;color:#222}
+.doc-table{width:100%;border-collapse:collapse;margin:16px 0}
+.doc-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#888;border-bottom:2px solid #111;padding:8px 8px}
+.doc-table td{padding:9px 8px;border-bottom:1px solid #eee;vertical-align:top;color:#222}
+.doc-table .ta-r{text-align:right;white-space:nowrap}
+.doc-table .doc-pos{color:#999;width:34px}
+.doc-total-row{display:flex;justify-content:flex-end;align-items:baseline;gap:26px;margin-top:8px;padding-top:12px;border-top:2px solid #111}
+.doc-total-row .doc-total-lbl{font-size:13px;color:#555;text-transform:uppercase;letter-spacing:.05em}
+.doc-total{font-size:22px;font-weight:700;color:#111}
+.doc-hint{margin:24px 0;padding:11px 14px;background:#f4f4f4;border-left:3px solid #111;font-size:12px;color:#333}
+.doc-bank{margin:18px 0;font-size:12px;color:#222}
+.doc-bank>div{padding:1px 0}
+/* ── Angebots-spezifische Dokument-Elemente (nutzen dieselbe .bg-doc-Basis) ── */
+.doc-section-title{font-size:13px;font-weight:700;color:#111;text-transform:uppercase;letter-spacing:.05em;margin:26px 0 8px;padding-bottom:4px;border-bottom:1px solid #ddd}
+.doc-subtotal{display:flex;justify-content:flex-end;align-items:baseline;gap:20px;margin-top:6px;font-size:13px}
+.doc-subtotal .doc-subtotal-lbl{color:#555}
+.doc-subtotal .doc-subtotal-val{font-weight:700;color:#111;min-width:120px;text-align:right}
+.doc-summary-box{margin-top:16px;padding:14px 16px;background:#f7f7f7;border:1px solid #e4e4e4;border-radius:4px}
+.doc-summary-box>div{display:flex;justify-content:space-between;align-items:baseline;gap:20px;padding:3px 0}
+.doc-summary-box .doc-sum-once{font-size:18px;font-weight:700;color:#111}
+.doc-summary-box .doc-sum-rec{font-size:14px;font-weight:700;color:#111}
+.doc-checklist{list-style:none;padding:0;margin:10px 0;column-count:2;column-gap:28px}
+.doc-checklist li{font-size:12px;color:#222;padding:3px 0;break-inside:avoid}
+.doc-checklist li::before{content:'✓ ';color:#111;font-weight:700}
+.doc-status{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:99px;border:1px solid #111;color:#111}
+.doc-accept{margin-top:28px;padding:16px;border:1px dashed #999;border-radius:4px}
+.doc-accept .doc-accept-cta{font-size:13px;font-weight:700;color:#111;margin-bottom:14px}
+.doc-sign-row{display:flex;gap:40px;margin-top:30px}
+.doc-sign-row>div{flex:1;border-top:1px solid #333;padding-top:5px;font-size:11px;color:#666}
+.doc-foot{margin-top:30px;padding-top:12px;border-top:1px solid #eee;font-size:11px;color:#666;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+/* Angebots-Status-Badges im dunklen Tool-UI (Historie) */
+.offer-badge{font-size:.6rem;padding:2px 8px;border-radius:99px;white-space:nowrap;border:1px solid;text-transform:uppercase;letter-spacing:.04em}
+.offer-badge.s-Entwurf{color:var(--muted2);border-color:var(--border2)}
+.offer-badge.s-Versendet{color:#4da6ff;border-color:rgba(77,166,255,.5)}
+.offer-badge.s-Angenommen{color:var(--accent);border-color:rgba(200,255,0,.5)}
+.offer-badge.s-Abgelehnt{color:var(--accent2);border-color:rgba(255,107,53,.5)}
+.offer-badge.s-Abgelaufen{color:#ffd700;border-color:rgba(255,215,0,.5)}
+/* ── Druck / PDF: nur das aktive Dokument zeigen (geteilt) ── */
+@media print{
+  @page{size:A4;margin:14mm}
+  html,body{height:auto;overflow:visible;background:#fff}
+  body *{visibility:hidden}
+  .bg-print-active,.bg-print-active *{visibility:visible}
+  .bg-print-active{position:absolute;left:0;top:0;width:100%;min-height:auto;box-shadow:none;padding:0;margin:0}
+  #pk-sync-bar{display:none !important}
+}
 
 </style>
 </head>
@@ -200,6 +287,9 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:16px 0}
   <div class="sidebar-section">Dateien</div>
   <div class="nav-item" data-tool="transfer"><span class="nav-icon">&#9889;</span> Transfer</div>
   <div class="nav-item" data-tool="vault"><span class="nav-icon">&#128193;</span> Vault</div>
+  <div class="sidebar-section">Business</div>
+  <div class="nav-item" data-tool="invoice"><span class="nav-icon">&#129534;</span> Rechnungen</div>
+  <div class="nav-item" data-tool="offer"><span class="nav-icon">&#128196;</span> Angebote</div>
   <div class="sidebar-bottom">v2.0 &middot; IndexedDB + Sync</div>
 </nav>
 <main id="main">
@@ -489,6 +579,214 @@ hr.sep{border:none;border-top:1px solid var(--border);margin:16px 0}
     </div>
     <div id="vault-list"></div>
     <div id="vault-empty" style="color:var(--muted);font-size:.75rem;padding:8px 0;display:none">Ordner ist leer</div>
+  </div>
+</div>
+
+<!-- RECHNUNGSERSTELLER -->
+<div class="tool-panel" id="tool-invoice" style="max-width:1120px">
+  <div class="tool-header"><h2>RECHNUNGS<span>ERSTELLER</span></h2><p>Kleinunternehmer &sect;19 UStG &middot; fortlaufende Nummer vom Server &middot; druckfertiges PDF</p></div>
+
+  <!-- FIRMENPROFIL -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="section-label" style="margin:0">Firmenprofil (einmal ausf&uuml;llen &middot; f&uuml;r alle geteilt)</div>
+      <span id="inv-profile-status" style="font-size:.7rem;color:var(--accent)"></span>
+    </div>
+    <div class="inv-grid">
+      <div class="inv-field"><label>Firmenname</label><input type="text" id="inv-company" value="Baltic Agency"></div>
+      <div class="inv-field"><label>Rechtsform</label><input type="text" id="inv-legalform" value="GbR"></div>
+      <div class="inv-field inv-full"><label>Stra&szlig;e &amp; Hausnummer</label><input type="text" id="inv-street" placeholder="Stra&szlig;e Nr."></div>
+      <div class="inv-field"><label>PLZ</label><input type="text" id="inv-zip" placeholder="PLZ"></div>
+      <div class="inv-field"><label>Ort</label><input type="text" id="inv-city" placeholder="Ort"></div>
+      <div class="inv-field"><label>E-Mail</label><input type="text" id="inv-email" placeholder="mail@&hellip;"></div>
+      <div class="inv-field"><label>Telefon</label><input type="text" id="inv-phone" placeholder="Telefon"></div>
+      <div class="inv-field"><label>Steuernummer</label><input type="text" id="inv-taxnumber" placeholder="z.B. 12/345/67890"></div>
+      <div class="inv-field"><label>ODER USt-IdNr.</label><input type="text" id="inv-vatid" placeholder="z.B. DE123456789"></div>
+      <div class="inv-field"><label>Kontoinhaber</label><input type="text" id="inv-bankholder" placeholder="Kontoinhaber"></div>
+      <div class="inv-field"><label>Bank</label><input type="text" id="inv-bank" placeholder="Bankname"></div>
+      <div class="inv-field"><label>IBAN</label><input type="text" id="inv-iban" placeholder="DE&hellip;"></div>
+      <div class="inv-field"><label>BIC</label><input type="text" id="inv-bic" placeholder="BIC"></div>
+    </div>
+    <hr class="sep">
+    <div class="section-label">Logo</div>
+    <div class="inv-logo-row">
+      <div id="inv-logo-preview"></div>
+      <label class="btn btn-secondary" style="flex:none;padding:9px 14px;font-size:.78rem;cursor:pointer">Logo w&auml;hlen<input type="file" id="inv-logo-input" accept="image/*" style="display:none"></label>
+      <button class="btn btn-secondary" id="inv-logo-remove" style="flex:none;padding:9px 14px;font-size:.78rem">Entfernen</button>
+    </div>
+    <hr class="sep">
+    <button class="btn btn-primary" id="inv-save-profile" style="flex:none;padding:10px 20px">Firmenprofil speichern</button>
+  </div>
+
+  <!-- KUNDE & RAHMENDATEN -->
+  <div class="card">
+    <div class="section-label">Kunde &amp; Rahmendaten</div>
+    <div class="inv-grid">
+      <div class="inv-field"><label>Firma / Name *</label><input type="text" id="inv-client-name" placeholder="Kunde GmbH"></div>
+      <div class="inv-field"><label>Ansprechpartner (optional)</label><input type="text" id="inv-client-contact" placeholder="Vor- &amp; Nachname"></div>
+      <div class="inv-field inv-full"><label>Anschrift</label><textarea id="inv-client-address" placeholder="Stra&szlig;e Nr.&#10;PLZ Ort"></textarea></div>
+      <div class="inv-field"><label>E-Mail (optional)</label><input type="text" id="inv-client-email" placeholder="kunde@&hellip;"></div>
+      <div class="inv-field"><label>Rechnungsdatum</label><input type="date" id="inv-date"></div>
+      <div class="inv-field"><label>Leistungsdatum / -zeitraum *</label><input type="text" id="inv-service" placeholder="z.B. 01.05.2026 oder Mai 2026"></div>
+      <div class="inv-field"><label>Rechnungstyp</label><select id="inv-type"><option value="einmalig">Einmalig</option><option value="monatlich">Monatlich (Dauerrechnung)</option><option value="jährlich">J&auml;hrlich (Dauerrechnung)</option></select></div>
+      <div class="inv-field inv-full" id="inv-period-wrap" style="display:none"><label>Leistungszeitraum</label><input type="text" id="inv-period" placeholder="z.B. 01.05.2026 &ndash; 31.05.2026"></div>
+      <div class="inv-field"><label>Zahlungsziel (Tage)</label><input type="number" id="inv-payment-days" value="14" min="0" step="1"></div>
+      <div class="inv-field"><label>F&auml;llig bis (auto)</label><input type="text" id="inv-due-display" disabled style="opacity:.7"></div>
+    </div>
+  </div>
+
+  <!-- POSITIONEN -->
+  <div class="card">
+    <div class="section-label">Positionen</div>
+    <div id="inv-items"></div>
+    <div class="inv-add-row">
+      <select id="inv-pkg-select"></select>
+      <button class="btn btn-secondary" id="inv-add-pkg" style="flex:none;padding:9px 14px;font-size:.78rem">+ Paket</button>
+      <button class="btn btn-secondary" id="inv-add-free" style="flex:none;padding:9px 14px;font-size:.78rem">+ Freie Position</button>
+    </div>
+    <div class="inv-total-bar"><span class="lbl">Gesamtbetrag</span><span class="val" id="inv-total-display">0,00 &euro;</span></div>
+  </div>
+
+  <!-- TEXTE -->
+  <div class="card">
+    <div class="section-label">Texte</div>
+    <div class="inv-grid">
+      <div class="inv-field inv-full"><label>Einleitung</label><textarea id="inv-intro">Vielen Dank f&uuml;r Ihren Auftrag und das entgegengebrachte Vertrauen. F&uuml;r die erbrachten Leistungen stellen wir Ihnen folgende Positionen in Rechnung:</textarea></div>
+      <div class="inv-field inv-full"><label>Zahlungsbedingung</label><textarea id="inv-payterms">Bitte &uuml;berweisen Sie den Rechnungsbetrag innerhalb von 14 Tagen ohne Abzug auf das unten genannte Konto.</textarea></div>
+      <div class="inv-field inv-full"><label>Schlusssatz</label><textarea id="inv-closing">Wir freuen uns auf die weitere Zusammenarbeit.</textarea></div>
+    </div>
+    <div class="inv-hint-fixed">Pflichthinweis (fest): Gem&auml;&szlig; &sect; 19 UStG wird keine Umsatzsteuer berechnet.</div>
+  </div>
+
+  <!-- AKTIONEN -->
+  <div class="card">
+    <div class="actions">
+      <button class="btn btn-primary" id="inv-save">Speichern &amp; Nr. vergeben</button>
+      <button class="btn btn-secondary" id="inv-print" disabled>&#128424; Drucken</button>
+      <button class="btn btn-secondary" id="inv-pdf" disabled>&#8595; Als PDF</button>
+    </div>
+    <div id="inv-status"></div>
+  </div>
+
+  <!-- VORSCHAU -->
+  <div class="card">
+    <div class="section-label">Vorschau (1:1 wie Ausdruck / PDF)</div>
+    <div class="inv-doc-wrap">
+      <div id="inv-document" class="bg-doc"></div>
+    </div>
+  </div>
+
+  <!-- HISTORIE -->
+  <div class="card">
+    <div class="section-label">Rechnungs-Historie</div>
+    <div id="inv-history-list"></div>
+  </div>
+</div>
+
+<!-- ANGEBOTSERSTELLER -->
+<div class="tool-panel" id="tool-offer" style="max-width:1120px">
+  <div class="tool-header"><h2>ANGEBOTS<span>ERSTELLER</span></h2><p>Vertragsangebot &middot; Referenz-Nr. ANG-JJJJ-NNN &middot; Kleinunternehmer &sect;19 &middot; druckfertiges PDF</p></div>
+
+  <div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="font-size:.74rem;color:var(--muted2)">Firmendaten &amp; Paketkatalog werden aus dem <b style="color:var(--text)">Rechnungstool</b> geteilt. Profil dort pflegen.</div>
+    <button class="btn btn-secondary" id="offer-goto-profile" style="flex:none;padding:8px 14px;font-size:.76rem">Firmenprofil &ouml;ffnen</button>
+  </div>
+
+  <!-- KUNDE & RAHMENDATEN -->
+  <div class="card">
+    <div class="section-label">Kunde &amp; Rahmendaten</div>
+    <div class="inv-grid">
+      <div class="inv-field inv-full"><label>Aus bestehendem Kunden &uuml;bernehmen</label><select id="offer-client-pick"><option value="">— neuer Kunde —</option></select></div>
+      <div class="inv-field"><label>Firma / Name *</label><input type="text" id="offer-client-name" placeholder="Kunde GmbH"></div>
+      <div class="inv-field"><label>Ansprechpartner</label><input type="text" id="offer-client-contact" placeholder="Vor- &amp; Nachname"></div>
+      <div class="inv-field inv-full"><label>Anschrift</label><textarea id="offer-client-address" placeholder="Stra&szlig;e Nr.&#10;PLZ Ort"></textarea></div>
+      <div class="inv-field"><label>E-Mail (optional)</label><input type="text" id="offer-client-email" placeholder="kunde@&hellip;"></div>
+      <div class="inv-field"><label>Betreff / Projekttitel *</label><input type="text" id="offer-subject" placeholder="z.B. Website f&uuml;r Heizung M&uuml;ller HH"></div>
+      <div class="inv-field"><label>Angebotsdatum</label><input type="date" id="offer-date"></div>
+      <div class="inv-field"><label>G&uuml;ltig bis</label><input type="date" id="offer-valid"></div>
+    </div>
+  </div>
+
+  <!-- POSITIONEN EINMALIG -->
+  <div class="card">
+    <div class="section-label">Positionen &mdash; einmalig</div>
+    <div id="offer-items-once"></div>
+    <div class="inv-add-row">
+      <select id="offer-pkg-once"></select>
+      <button class="btn btn-secondary" id="offer-add-once" style="flex:none;padding:9px 14px;font-size:.78rem">+ Paket</button>
+      <button class="btn btn-secondary" id="offer-add-free-once" style="flex:none;padding:9px 14px;font-size:.78rem">+ Freie Position</button>
+    </div>
+    <div class="inv-total-bar"><span class="lbl">Einmalig gesamt</span><span class="val" id="offer-total-once">0,00 &euro;</span></div>
+  </div>
+
+  <!-- POSITIONEN LAUFEND -->
+  <div class="card">
+    <div class="section-label">Positionen &mdash; laufend (pro Monat)</div>
+    <div id="offer-items-rec"></div>
+    <div class="inv-add-row">
+      <select id="offer-pkg-rec"></select>
+      <button class="btn btn-secondary" id="offer-add-rec" style="flex:none;padding:9px 14px;font-size:.78rem">+ Paket</button>
+      <button class="btn btn-secondary" id="offer-add-free-rec" style="flex:none;padding:9px 14px;font-size:.78rem">+ Freie Position</button>
+    </div>
+    <div class="inv-total-bar"><span class="lbl">Laufend / Monat</span><span class="val" id="offer-total-rec">0,00 &euro;</span></div>
+  </div>
+
+  <!-- LEISTUNGEN IM DETAIL -->
+  <div class="card">
+    <div class="section-label">Leistungen im Detail (inkludierte SEO-Grundleistungen)</div>
+    <div id="offer-seo-list" style="display:flex;flex-direction:column;gap:4px"></div>
+  </div>
+
+  <!-- TEXTE -->
+  <div class="card">
+    <div class="section-label">Texte</div>
+    <div class="inv-grid">
+      <div class="inv-field inv-full"><label>Pers&ouml;nliche Einleitung</label><textarea id="offer-intro">Vielen Dank für Ihr Interesse. Auf Basis unseres Gesprächs unterbreiten wir Ihnen folgendes Angebot für Ihren Webauftritt:</textarea></div>
+      <div class="inv-field inv-full"><label>Nutzen-Absatz</label><textarea id="offer-benefit">Wer bei Google nicht auffindbar ist, existiert für die meisten Suchenden nicht. Eine schnelle, mobil-optimierte Website sorgt dafür, dass Anfragen bei Ihnen landen — nicht bei der Konkurrenz.</textarea></div>
+    </div>
+  </div>
+
+  <!-- KONDITIONEN (OPTIONAL) -->
+  <div class="card">
+    <div class="section-label">Konditionen (optional, editierbar)</div>
+    <div class="inv-grid">
+      <div class="inv-field inv-full"><label>Ablauf / Zeitplan</label><textarea id="offer-schedule">Nach Auftragsbestätigung: Kickoff & Materialübergabe. Umsetzung in der Regel 2–4 Wochen. Anschließend Feedbackrunde, Korrekturen und Go-Live.</textarea></div>
+      <div class="inv-field inv-full"><label>Zahlung</label><textarea id="offer-payment">50 % bei Auftragsbestätigung, 50 % nach Abnahme. Zahlbar innerhalb von 14 Tagen.</textarea></div>
+      <div class="inv-field inv-full"><label>Mitwirkung / Content-Frist</label><textarea id="offer-cooperation">Texte, Logos und Bilder werden vom Auftraggeber bis spätestens [Datum] bereitgestellt.</textarea></div>
+      <div class="inv-field inv-full"><label>Nutzungsrechte</label><textarea id="offer-rights">Nach vollständiger Bezahlung gehen die Nutzungsrechte am erstellten Webauftritt auf den Auftraggeber über.</textarea></div>
+      <div class="inv-field inv-full"><label>Hosting / Domain</label><textarea id="offer-hosting">Hosting und Domain werden auf Wunsch eingerichtet und betreut (siehe laufende Kosten). Alternativ Übergabe an ein bestehendes Hosting möglich.</textarea></div>
+      <div class="inv-field inv-full"><label>AGB-Verweis</label><textarea id="offer-terms">Es gelten unsere Allgemeinen Geschäftsbedingungen.</textarea></div>
+      <div class="inv-field inv-full"><label>Schlusssatz</label><textarea id="offer-closing">Wir freuen uns auf die Zusammenarbeit und stehen für Rückfragen jederzeit bereit.</textarea></div>
+    </div>
+  </div>
+
+  <!-- AKTIONEN -->
+  <div class="card">
+    <div class="inv-grid" style="margin-bottom:10px">
+      <div class="inv-field"><label>Status</label><select id="offer-status-select"><option>Entwurf</option><option>Versendet</option><option>Angenommen</option><option>Abgelehnt</option></select></div>
+      <div class="inv-field"><label>Aktuelle Nummer</label><input type="text" id="offer-current-num" disabled style="opacity:.7" placeholder="(beim Speichern)"></div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" id="offer-save">Speichern &amp; Nr. vergeben</button>
+      <button class="btn btn-secondary" id="offer-print" disabled>&#128424; Drucken</button>
+      <button class="btn btn-secondary" id="offer-pdf" disabled>&#8595; Als PDF</button>
+      <button class="btn btn-secondary" id="offer-to-invoice" disabled title="In Rechnung &uuml;bernehmen">&rarr; Rechnung</button>
+    </div>
+    <div id="offer-status"></div>
+  </div>
+
+  <!-- VORSCHAU -->
+  <div class="card">
+    <div class="section-label">Vorschau (1:1 wie Ausdruck / PDF)</div>
+    <div class="inv-doc-wrap">
+      <div id="offer-document" class="bg-doc"></div>
+    </div>
+  </div>
+
+  <!-- HISTORIE -->
+  <div class="card">
+    <div class="section-label">Angebots-Historie</div>
+    <div id="offer-history-list"></div>
   </div>
 </div>
 
@@ -1135,6 +1433,613 @@ window._pkSetWhiteboard=function(data){wbObjects=data;wbPushHistory();wbRedraw()
 })();
 
 // ════════════════════════════════════════════════════
+// BG — GETEILTES MODUL (Profil · Katalog · Formatierung · Vorschau/PDF)
+// Wird von Rechnungs- UND Angebotstool genutzt — nicht duplizieren.
+// ════════════════════════════════════════════════════
+window.BG = (function(){
+  const eurFmt = new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2});
+  const qtyFmt = new Intl.NumberFormat('de-DE',{maximumFractionDigits:2});
+  const eur = n => eurFmt.format(isFinite(n)?n:0);
+  const fmtQty = q => qtyFmt.format(isFinite(q)?q:0);
+  const escI = s => (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const escA = s => (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const nl2br = s => escI(s).replace(/\n/g,'<br>');
+  function fmtDate(iso){ if(!iso) return ''; const d=new Date(iso); if(isNaN(d)) return escI(iso); return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+  function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function addDaysISO(iso,days){ const d=iso?new Date(iso):new Date(); if(isNaN(d)) return ''; d.setDate(d.getDate()+(days||0)); return d.toISOString().slice(0,10); }
+
+  // ── Zentraler Paketkatalog (eine Datenquelle für beide Tools) ──
+  const CATALOG = {
+    oneTime: [
+      {name:'Starter',desc:'1-Pager, Template-nah, SEO-Grundlagen',price:500},
+      {name:'Standard',desc:'4–6 Seiten, custom Design, Kontaktformular',price:1200},
+      {name:'Premium',desc:'Animationen, CMS, SEO-Audit, Google Business',price:2500},
+      {name:'Google Business Setup',desc:'Einrichtung, Fotos, Kategorien, Verlinkung',price:150}
+    ],
+    recurring: [
+      {name:'Wartungsretainer',desc:'Updates, Hosting, Anpassungen',price:50},
+      {name:'Hosting-Marge',desc:'Vercel/Domain mit Marge',price:10}
+    ],
+    seoDetails: [
+      'Klickoptimierte Meta-Titel & -Beschreibungen',
+      'Open-Graph-Tags (Social-Sharing)',
+      'robots.txt',
+      'XML-Sitemap',
+      'Google-Business-Verknüpfung',
+      'Lighthouse-Score ≥ 90',
+      'Mobile-First-Optimierung'
+    ]
+  };
+  CATALOG.all = () => [
+    ...CATALOG.oneTime.map(p=>({...p,recurring:false})),
+    ...CATALOG.recurring.map(p=>({...p,recurring:true}))
+  ];
+
+  // ── Geteiltes Firmenprofil (state.profile) ──
+  const DEFAULT_PROFILE = {company:'Baltic Agency',legalForm:'GbR',street:'',zip:'',city:'',email:'',phone:'',taxNumber:'',vatId:'',bankHolder:'',iban:'',bic:'',bank:'',logo:''};
+  let profile = {...DEFAULT_PROFILE};
+  try{ const c=JSON.parse(localStorage.getItem('bg-profile')||localStorage.getItem('inv-profile')||'null'); if(c) profile={...profile,...c}; }catch(e){}
+  const subs = [];
+  function getProfile(){ return profile; }
+  function onProfile(fn){ if(typeof fn==='function') subs.push(fn); }
+  function setProfile(p, opts){
+    opts = opts||{};
+    profile = {...profile, ...(p||{})};
+    try{ localStorage.setItem('bg-profile', JSON.stringify(profile)); }catch(e){}
+    if(opts.broadcast && window.pkSend) window.pkSend('profile', profile);
+    subs.forEach(fn=>{ try{ fn(profile, opts.source||'local'); }catch(e){} });
+  }
+
+  // ── Geteilte Druck-/PDF-Ausgabe (gleicher WYSIWYG-Knoten) ──
+  function printNode(node){
+    if(!node) return;
+    document.querySelectorAll('.bg-print-active').forEach(n=>n.classList.remove('bg-print-active'));
+    node.classList.add('bg-print-active');
+    const cleanup=()=>{ node.classList.remove('bg-print-active'); window.removeEventListener('afterprint',cleanup); };
+    window.addEventListener('afterprint',cleanup);
+    window.print();
+  }
+  function exportPDF(node, filename){
+    if(!node) return Promise.reject(new Error('kein Knoten'));
+    if(typeof html2pdf==='undefined') return Promise.reject(new Error('html2pdf fehlt'));
+    return html2pdf().set({margin:0,filename,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(node).save();
+  }
+
+  return { eur, fmtQty, fmtDate, todayISO, addDaysISO, escI, escA, nl2br, catalog: CATALOG, getProfile, setProfile, onProfile, printNode, exportPDF };
+})();
+
+// ════════════════════════════════════════════════════
+// RECHNUNGSERSTELLER (INVOICE) — nutzt BG
+// ════════════════════════════════════════════════════
+{
+const $ = id => document.getElementById(id);
+const {eur,fmtQty,fmtDate,todayISO,escI,escA,nl2br} = BG;
+
+const DEFAULT_INTRO='Vielen Dank für Ihren Auftrag und das entgegengebrachte Vertrauen. Für die erbrachten Leistungen stellen wir Ihnen folgende Positionen in Rechnung:';
+const DEFAULT_PAYTERMS='Bitte überweisen Sie den Rechnungsbetrag innerhalb von 14 Tagen ohne Abzug auf das unten genannte Konto.';
+const DEFAULT_CLOSING='Wir freuen uns auf die weitere Zusammenarbeit.';
+
+const INV_PKGS = BG.catalog.all();   // zentraler Katalog (geteilt mit Angebotstool)
+
+let invItems=[];
+let invInvoices=[];
+let invCurrentNumber=null;  // zugewiesene Nummer des aktuell angezeigten Dokuments
+let invViewing=false;       // true = gespeicherte Rechnung wird angezeigt (nicht das Live-Formular)
+
+const PROFILE_FIELDS={company:'inv-company',legalForm:'inv-legalform',street:'inv-street',zip:'inv-zip',city:'inv-city',email:'inv-email',phone:'inv-phone',taxNumber:'inv-taxnumber',vatId:'inv-vatid',bankHolder:'inv-bankholder',bank:'inv-bank',iban:'inv-iban',bic:'inv-bic'};
+
+function readProfileForm(){ const o={}; for(const k in PROFILE_FIELDS){ const el=$(PROFILE_FIELDS[k]); if(el) o[k]=el.value; } return o; }
+function fillProfileForm(){ const p=BG.getProfile(); for(const k in PROFILE_FIELDS){ const el=$(PROFILE_FIELDS[k]); if(el) el.value=p[k]||''; } renderLogoPreview(); }
+function renderLogoPreview(){ const w=$('inv-logo-preview'); const logo=BG.getProfile().logo; if(logo) w.innerHTML='<img src="'+logo+'" style="max-height:60px;max-width:160px;border-radius:6px">'; else w.innerHTML='<span style="color:var(--muted);font-size:.7rem">Kein Logo</span>'; }
+
+try{ const c=JSON.parse(localStorage.getItem('inv-invoices')||'null'); if(Array.isArray(c)) invInvoices=c; }catch(e){}
+
+function invStatus(msg,err){ const el=$('inv-status'); el.textContent=msg||''; el.style.color=err?'var(--accent2)':'var(--accent)'; }
+
+// ── Positionen ────────────────────────────────────────
+function invTotal(){ return invItems.reduce((s,it)=>s+((it.qty||0)*(it.price||0)),0); }
+function updateTotalDisplay(){ $('inv-total-display').textContent=eur(invTotal()); }
+function renderItems(){
+  const c=$('inv-items'); c.innerHTML='';
+  invItems.forEach((it,i)=>{
+    const row=document.createElement('div'); row.className='inv-item-row';
+    row.innerHTML=`<input type="number" class="inv-it-qty" value="${it.qty}" min="0" step="1" style="width:64px" title="Menge">`
+      +`<input type="text" class="inv-it-desc" value="${escA(it.desc)}" placeholder="Beschreibung" style="flex:1;min-width:150px">`
+      +`<input type="number" class="inv-it-price" value="${it.price}" min="0" step="0.01" style="width:110px" title="Einzelpreis €">`
+      +`<span class="inv-it-sum">${eur((it.qty||0)*(it.price||0))}</span>`
+      +`<button class="inv-it-del" title="Entfernen">✕</button>`;
+    const qty=row.querySelector('.inv-it-qty'),desc=row.querySelector('.inv-it-desc'),price=row.querySelector('.inv-it-price'),sum=row.querySelector('.inv-it-sum');
+    const upd=()=>{ it.qty=parseFloat(qty.value)||0; it.desc=desc.value; it.price=parseFloat(price.value)||0; sum.textContent=eur(it.qty*it.price); updateTotalDisplay(); onFormEdit(); };
+    qty.addEventListener('input',upd); desc.addEventListener('input',upd); price.addEventListener('input',upd);
+    row.querySelector('.inv-it-del').addEventListener('click',()=>{ invItems.splice(i,1); renderItems(); onFormEdit(); });
+    c.appendChild(row);
+  });
+  updateTotalDisplay();
+}
+
+// ── Rahmendaten ───────────────────────────────────────
+function updateDue(){ const days=parseInt($('inv-payment-days').value)||0; const base=$('inv-date').value; if(base){ const d=new Date(base); d.setDate(d.getDate()+days); $('inv-due-display').value=fmtDate(d.toISOString().slice(0,10)); } else $('inv-due-display').value='—'; }
+function typeChanged(){ $('inv-period-wrap').style.display=($('inv-type').value==='einmalig')?'none':'block'; }
+
+// ── Dokument bauen ────────────────────────────────────
+function buildInvoiceFromForm(){
+  return {
+    number:invCurrentNumber,
+    profileSnapshot:{...BG.getProfile()},
+    client:{name:$('inv-client-name').value,address:$('inv-client-address').value,contact:$('inv-client-contact').value,email:$('inv-client-email').value},
+    invoiceDate:$('inv-date').value,
+    serviceDate:$('inv-service').value,
+    type:$('inv-type').value,
+    period:$('inv-period').value,
+    paymentDays:parseInt($('inv-payment-days').value)||0,
+    items:invItems.map(it=>({qty:it.qty,desc:it.desc,price:it.price})),
+    intro:$('inv-intro').value,
+    paymentTerms:$('inv-payterms').value,
+    closing:$('inv-closing').value
+  };
+}
+function dueDateOf(inv){ if(!inv.invoiceDate) return ''; const d=new Date(inv.invoiceDate); if(isNaN(d)) return ''; d.setDate(d.getDate()+(inv.paymentDays||0)); return d.toISOString().slice(0,10); }
+function renderDocument(inv){
+  const p=inv.profileSnapshot||{};
+  const items=inv.items||[];
+  const total=items.reduce((s,it)=>s+((it.qty||0)*(it.price||0)),0);
+  const typeLabel={einmalig:'Rechnung',monatlich:'Rechnung (monatlich)','jährlich':'Rechnung (jährlich)'}[inv.type]||'Rechnung';
+  const issuerAddr=[p.street,[p.zip,p.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  const taxLine=p.taxNumber?('Steuernummer: '+escI(p.taxNumber)):(p.vatId?('USt-IdNr.: '+escI(p.vatId)):'');
+  const senderLine=[p.company,p.legalForm,issuerAddr].filter(Boolean).map(escI).join(' · ');
+  const rows=items.map((it,i)=>`<tr><td class="doc-pos">${i+1}</td><td class="ta-r">${fmtQty(it.qty)}</td><td>${nl2br(it.desc)}</td><td class="ta-r">${eur(it.price)}</td><td class="ta-r">${eur((it.qty||0)*(it.price||0))}</td></tr>`).join('')
+    || `<tr><td colspan="5" style="color:#aaa;text-align:center;padding:18px">Keine Positionen</td></tr>`;
+  const bank=[p.bankHolder&&('Kontoinhaber: '+escI(p.bankHolder)),p.iban&&('IBAN: '+escI(p.iban)),p.bic&&('BIC: '+escI(p.bic)),p.bank&&('Bank: '+escI(p.bank))].filter(Boolean);
+  const bankBlock=bank.length?`<div class="doc-bank"><div class="doc-label">Bankverbindung</div>${bank.map(b=>'<div>'+b+'</div>').join('')}</div>`:'';
+  const doc=$('inv-document');
+  doc.dataset.number=inv.number||'';
+  doc.innerHTML=`
+    <div class="doc-head">
+      <div class="doc-logo">${p.logo?`<img src="${p.logo}">`:''}</div>
+      <div class="doc-issuer">
+        <div class="doc-company">${escI(p.company||'')}${p.legalForm?' <span class="doc-legal">'+escI(p.legalForm)+'</span>':''}</div>
+        ${issuerAddr?`<div>${escI(issuerAddr)}</div>`:''}
+        ${p.email?`<div>${escI(p.email)}</div>`:''}
+        ${p.phone?`<div>${escI(p.phone)}</div>`:''}
+        ${taxLine?`<div>${taxLine}</div>`:''}
+      </div>
+    </div>
+    <div style="font-size:9px;color:#999;border-bottom:1px solid #eee;padding-bottom:4px;margin-bottom:18px">${senderLine}</div>
+    <div class="doc-recipient-row">
+      <div class="doc-recipient">
+        <div class="doc-label">Rechnung an</div>
+        <div class="doc-strong">${escI(inv.client&&inv.client.name||'')}</div>
+        ${inv.client&&inv.client.contact?`<div>z. Hd. ${escI(inv.client.contact)}</div>`:''}
+        <div>${nl2br(inv.client&&inv.client.address||'')}</div>
+        ${inv.client&&inv.client.email?`<div>${escI(inv.client.email)}</div>`:''}
+      </div>
+      <div class="doc-meta">
+        <div><span>Rechnungsnummer</span><strong>${escI(inv.number||'(beim Speichern)')}</strong></div>
+        <div><span>Rechnungsdatum</span><strong>${fmtDate(inv.invoiceDate)}</strong></div>
+        <div><span>Leistungsdatum</span><strong>${escI(inv.serviceDate||'')}</strong></div>
+        <div><span>Zahlungsziel</span><strong>${inv.paymentDays||0} Tage</strong></div>
+        <div><span>Fällig bis</span><strong>${fmtDate(dueDateOf(inv))}</strong></div>
+      </div>
+    </div>
+    <h1 class="doc-title">${escI(typeLabel)}</h1>
+    ${(inv.type!=='einmalig'&&inv.period)?`<div class="doc-period">Leistungszeitraum: ${escI(inv.period)}</div>`:''}
+    ${inv.intro?`<p class="doc-text">${nl2br(inv.intro)}</p>`:''}
+    <table class="doc-table">
+      <thead><tr><th class="doc-pos">Pos.</th><th class="ta-r">Menge</th><th>Beschreibung</th><th class="ta-r">Einzelpreis</th><th class="ta-r">Summe</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="doc-total-row"><span class="doc-total-lbl">Gesamtbetrag</span><span class="doc-total">${eur(total)}</span></div>
+    <div class="doc-hint">Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</div>
+    ${inv.paymentTerms?`<p class="doc-text">${nl2br(inv.paymentTerms)}</p>`:''}
+    ${bankBlock}
+    ${inv.closing?`<p class="doc-text">${nl2br(inv.closing)}</p>`:''}
+  `;
+}
+function updatePreview(){ renderDocument(buildInvoiceFromForm()); }
+function updateActionState(){ const can=!!$('inv-document').dataset.number; $('inv-print').disabled=!can; $('inv-pdf').disabled=!can; }
+function onFormEdit(){ invViewing=false; invCurrentNumber=null; updatePreview(); updateActionState(); }
+
+// ── Historie ──────────────────────────────────────────
+function renderHistory(){
+  const c=$('inv-history-list'); if(!c) return;
+  const list=invInvoices.slice().sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+  if(!list.length){ c.innerHTML='<div style="color:var(--muted);font-size:.75rem;padding:6px 0">Noch keine Rechnungen gespeichert</div>'; return; }
+  c.innerHTML='';
+  list.forEach(inv=>{
+    const total=(inv.items||[]).reduce((s,it)=>s+((it.qty||0)*(it.price||0)),0);
+    const div=document.createElement('div'); div.className='file-item';
+    div.innerHTML=`<div class="file-icon">🧾</div><div class="file-info"><div class="file-name">${escI(inv.number)} · ${escI(inv.client&&inv.client.name||'—')}</div><div class="file-meta">${fmtDate(inv.invoiceDate)} · ${eur(total)}</div></div><div class="file-actions"><button class="file-btn" data-act="view">Ansehen</button><button class="file-btn" data-act="dup">Als Vorlage</button></div>`;
+    div.querySelector('[data-act="view"]').onclick=()=>viewInvoice(inv);
+    div.querySelector('[data-act="dup"]').onclick=()=>duplicateInvoice(inv);
+    c.appendChild(div);
+  });
+}
+function viewInvoice(inv){ invViewing=true; invCurrentNumber=inv.number; renderDocument(inv); updateActionState(); document.getElementById('main').scrollTop=0; invStatus('Rechnung '+inv.number+' geöffnet.',false); }
+function duplicateInvoice(inv){
+  $('inv-client-name').value=inv.client&&inv.client.name||'';
+  $('inv-client-address').value=inv.client&&inv.client.address||'';
+  $('inv-client-contact').value=inv.client&&inv.client.contact||'';
+  $('inv-client-email').value=inv.client&&inv.client.email||'';
+  $('inv-date').value=todayISO();
+  $('inv-service').value=inv.serviceDate||'';
+  $('inv-type').value=inv.type||'einmalig';
+  $('inv-period').value=inv.period||'';
+  $('inv-payment-days').value=inv.paymentDays!=null?inv.paymentDays:14;
+  $('inv-intro').value=inv.intro||DEFAULT_INTRO;
+  $('inv-payterms').value=inv.paymentTerms||DEFAULT_PAYTERMS;
+  $('inv-closing').value=inv.closing||DEFAULT_CLOSING;
+  invItems=(inv.items||[]).map(it=>({qty:it.qty,desc:it.desc,price:it.price}));
+  renderItems(); typeChanged(); updateDue();
+  invViewing=false; invCurrentNumber=null;
+  updatePreview(); updateActionState();
+  document.getElementById('main').scrollTop=0;
+  invStatus('Als Vorlage übernommen — zum Anlegen „Speichern & Nr. vergeben“ klicken.',false);
+}
+
+// ── Geteiltes Profil: auf Änderungen reagieren (lokal & remote) ──
+BG.onProfile((p, source)=>{ renderLogoPreview(); if(source==='remote') fillProfileForm(); if(!invViewing) updatePreview(); });
+
+// ── PartyKit-Hooks (vom Sync-Block aufgerufen) ────────
+window._invSetInvoices=function(list){ invInvoices=Array.isArray(list)?list.slice():[]; localStorage.setItem('inv-invoices',JSON.stringify(invInvoices)); renderHistory(); if(window._offerRefreshClients) window._offerRefreshClients(); };
+window._invClients=function(){ return invInvoices.map(i=>i.client).filter(c=>c&&c.name); };
+
+// ── Angebot → Rechnung übernehmen (Verzahnung) ────────
+window._invLoadFromOffer=function(offer){
+  if(!offer) return;
+  $('inv-client-name').value=offer.client&&offer.client.name||'';
+  $('inv-client-address').value=offer.client&&offer.client.address||'';
+  $('inv-client-contact').value=offer.client&&offer.client.contact||'';
+  $('inv-client-email').value=offer.client&&offer.client.email||'';
+  $('inv-date').value=todayISO();
+  $('inv-service').value=offer.subject||'';
+  $('inv-type').value='einmalig';
+  $('inv-period').value='';
+  $('inv-payment-days').value=14;
+  $('inv-intro').value=DEFAULT_INTRO;
+  $('inv-payterms').value=DEFAULT_PAYTERMS;
+  $('inv-closing').value=DEFAULT_CLOSING;
+  // Alle Positionen (einmalig + laufend) übernehmen; laufende als Hinweis kennzeichnen
+  const once=(offer.itemsOnce||[]).map(it=>({qty:it.qty,desc:it.desc,price:it.price}));
+  const rec=(offer.itemsRecurring||[]).map(it=>({qty:it.qty,desc:(it.desc||'')+' (mtl.)',price:it.price}));
+  invItems=once.concat(rec);
+  renderItems(); typeChanged(); updateDue();
+  invViewing=false; invCurrentNumber=null;
+  updatePreview(); updateActionState();
+  // ins Rechnungstool wechseln
+  document.querySelector('.nav-item[data-tool="invoice"]')?.click();
+  document.getElementById('main').scrollTop=0;
+  invStatus('Aus Angebot '+(offer.number||'')+' übernommen — zum Anlegen „Speichern & Nr. vergeben“ klicken.',false);
+};
+window._invOnCreated=function(inv){
+  if(!inv||!inv.number) return;
+  if(!invInvoices.some(x=>x.number===inv.number)) invInvoices.push(inv);
+  else invInvoices=invInvoices.map(x=>x.number===inv.number?inv:x);
+  localStorage.setItem('inv-invoices',JSON.stringify(invInvoices));
+  invViewing=true; invCurrentNumber=inv.number;
+  renderDocument(inv); renderHistory(); updateActionState();
+  invStatus('Rechnung '+inv.number+' gespeichert ✓',false);
+};
+
+// ── Events ────────────────────────────────────────────
+$('inv-save-profile').addEventListener('click',()=>{ BG.setProfile(readProfileForm(),{broadcast:true,source:'local'}); $('inv-profile-status').textContent='Gespeichert ✓'; setTimeout(()=>{$('inv-profile-status').textContent='';},1800); });
+Object.values(PROFILE_FIELDS).forEach(id=>{ const el=$(id); if(el) el.addEventListener('input',()=>{ BG.setProfile(readProfileForm(),{source:'local'}); }); });
+$('inv-logo-input').addEventListener('change',function(){ const f=this.files[0]; this.value=''; if(!f) return; const r=new FileReader(); r.onload=()=>{ BG.setProfile({logo:r.result},{source:'local'}); }; r.readAsDataURL(f); });
+$('inv-logo-remove').addEventListener('click',()=>{ BG.setProfile({logo:''},{source:'local'}); });
+
+['inv-client-name','inv-client-address','inv-client-contact','inv-client-email','inv-service','inv-period','inv-intro','inv-payterms','inv-closing'].forEach(id=>$(id).addEventListener('input',onFormEdit));
+$('inv-type').addEventListener('change',()=>{ typeChanged(); onFormEdit(); });
+$('inv-date').addEventListener('input',()=>{ updateDue(); onFormEdit(); });
+$('inv-payment-days').addEventListener('input',()=>{ updateDue(); onFormEdit(); });
+
+$('inv-pkg-select').innerHTML='<option value="">Paket wählen …</option>'+INV_PKGS.map((p,i)=>`<option value="${i}">${escI(p.name)} — ${eur(p.price)}${p.recurring?' /Monat':''}</option>`).join('');
+$('inv-add-pkg').addEventListener('click',()=>{ const v=$('inv-pkg-select').value; if(v==='') return; const p=INV_PKGS[+v]; invItems.push({qty:1,desc:p.name+' – '+p.desc,price:p.price}); renderItems(); onFormEdit(); });
+$('inv-add-free').addEventListener('click',()=>{ invItems.push({qty:1,desc:'',price:0}); renderItems(); onFormEdit(); });
+
+$('inv-save').addEventListener('click',()=>{
+  if(!$('inv-client-name').value.trim()){ invStatus('Bitte Firma / Name des Kunden angeben.',true); return; }
+  if(!$('inv-service').value.trim()){ invStatus('Bitte Leistungsdatum / -zeitraum angeben.',true); return; }
+  if(!invItems.length){ invStatus('Bitte mindestens eine Position hinzufügen.',true); return; }
+  if(!window._invCreate || !(window._invConnected&&window._invConnected())){ invStatus('Keine Verbindung — Rechnungsnummer kann nicht vergeben werden.',true); return; }
+  const data=buildInvoiceFromForm(); delete data.number;
+  invStatus('Speichern …',false);
+  window._invCreate(data, crypto.randomUUID());
+});
+$('inv-print').addEventListener('click',()=>{ if(!$('inv-document').dataset.number){ invStatus('Bitte zuerst speichern (Rechnungsnummer erforderlich).',true); return; } BG.printNode($('inv-document')); });
+$('inv-pdf').addEventListener('click',()=>{
+  const num=$('inv-document').dataset.number;
+  if(!num){ invStatus('Bitte zuerst speichern (Rechnungsnummer erforderlich).',true); return; }
+  invStatus('PDF wird erstellt …',false);
+  BG.exportPDF($('inv-document'),'Rechnung_'+num+'.pdf').then(()=>invStatus('PDF gespeichert ✓',false)).catch(()=>invStatus('PDF-Fehler.',true));
+});
+
+// ── Init ──────────────────────────────────────────────
+$('inv-date').value=todayISO();
+fillProfileForm(); typeChanged(); updateDue(); renderItems(); updatePreview(); renderHistory(); updateActionState();
+}
+
+// ════════════════════════════════════════════════════
+// ANGEBOTSERSTELLER (OFFER) — nutzt BG (Profil · Katalog · Format · Vorschau/PDF)
+// ════════════════════════════════════════════════════
+{
+const $ = id => document.getElementById(id);
+const {eur,fmtQty,fmtDate,todayISO,addDaysISO,escI,escA,nl2br} = BG;
+const STATUSES=['Entwurf','Versendet','Angenommen','Abgelehnt','Abgelaufen'];
+
+let ofOnce=[];      // einmalige Positionen
+let ofRec=[];       // laufende Positionen (pro Monat)
+let ofSeo=[];       // [{label,checked}]
+let ofOffers=[];    // Historie (vom Server)
+let ofCurrentNumber=null;
+let ofViewing=false;
+
+function ofStatus(msg,err){ const el=$('offer-status'); el.textContent=msg||''; el.style.color=err?'var(--accent2)':'var(--accent)'; }
+
+// ── Positionen (generisch für einmalig & laufend) ──
+function sumOf(arr){ return arr.reduce((s,it)=>s+((it.qty||0)*(it.price||0)),0); }
+function updateOfferTotals(){ $('offer-total-once').textContent=eur(sumOf(ofOnce)); $('offer-total-rec').textContent=eur(sumOf(ofRec)); }
+function renderItemList(container, arr){
+  container.innerHTML='';
+  arr.forEach((it,i)=>{
+    const row=document.createElement('div'); row.className='inv-item-row';
+    row.innerHTML=`<input type="number" class="inv-it-qty" value="${it.qty}" min="0" step="1" style="width:64px" title="Menge">`
+      +`<input type="text" class="inv-it-desc" value="${escA(it.desc)}" placeholder="Beschreibung" style="flex:1;min-width:150px">`
+      +`<input type="number" class="inv-it-price" value="${it.price}" min="0" step="0.01" style="width:110px" title="Einzelpreis €">`
+      +`<span class="inv-it-sum">${eur((it.qty||0)*(it.price||0))}</span>`
+      +`<button class="inv-it-del" title="Entfernen">✕</button>`;
+    const qty=row.querySelector('.inv-it-qty'),desc=row.querySelector('.inv-it-desc'),price=row.querySelector('.inv-it-price'),sum=row.querySelector('.inv-it-sum');
+    const upd=()=>{ it.qty=parseFloat(qty.value)||0; it.desc=desc.value; it.price=parseFloat(price.value)||0; sum.textContent=eur(it.qty*it.price); updateOfferTotals(); onOfferEdit(); };
+    qty.addEventListener('input',upd); desc.addEventListener('input',upd); price.addEventListener('input',upd);
+    row.querySelector('.inv-it-del').addEventListener('click',()=>{ arr.splice(i,1); renderItemList(container,arr); onOfferEdit(); });
+    container.appendChild(row);
+  });
+  updateOfferTotals();
+}
+function renderOfferItems(){ renderItemList($('offer-items-once'),ofOnce); renderItemList($('offer-items-rec'),ofRec); }
+
+// ── SEO-Detailliste ──
+function defaultSeo(){ return BG.catalog.seoDetails.map(l=>({label:l,checked:true})); }
+function renderSeoList(){
+  const c=$('offer-seo-list'); c.innerHTML='';
+  ofSeo.forEach((s,i)=>{
+    const id='offer-seo-'+i;
+    const div=document.createElement('label'); div.style.cssText='display:flex;align-items:center;gap:10px;font-size:.78rem;cursor:pointer';
+    div.innerHTML=`<input type="checkbox" id="${id}" ${s.checked?'checked':''} style="accent-color:var(--accent);width:15px;height:15px"><span>${escI(s.label)}</span>`;
+    div.querySelector('input').addEventListener('change',e=>{ ofSeo[i].checked=e.target.checked; onOfferEdit(); });
+    c.appendChild(div);
+  });
+}
+
+// ── Status (mit Auto-„Abgelaufen“) ──
+function effectiveStatus(off){
+  if(off.status==='Angenommen'||off.status==='Abgelehnt') return off.status;
+  if(off.validUntil){ const d=new Date(off.validUntil); if(!isNaN(d)){ const today=new Date(todayISO()); if(d<today) return 'Abgelaufen'; } }
+  return off.status||'Entwurf';
+}
+
+// ── Dokument-Daten ──
+function buildOfferFromForm(){
+  return {
+    number:ofCurrentNumber,
+    status:$('offer-status-select').value,
+    profileSnapshot:{...BG.getProfile()},
+    client:{name:$('offer-client-name').value,address:$('offer-client-address').value,contact:$('offer-client-contact').value,email:$('offer-client-email').value},
+    offerDate:$('offer-date').value,
+    validUntil:$('offer-valid').value,
+    subject:$('offer-subject').value,
+    intro:$('offer-intro').value,
+    benefit:$('offer-benefit').value,
+    itemsOnce:ofOnce.map(it=>({qty:it.qty,desc:it.desc,price:it.price})),
+    itemsRecurring:ofRec.map(it=>({qty:it.qty,desc:it.desc,price:it.price})),
+    seo:ofSeo.map(s=>({label:s.label,checked:s.checked})),
+    schedule:$('offer-schedule').value,
+    payment:$('offer-payment').value,
+    cooperation:$('offer-cooperation').value,
+    rights:$('offer-rights').value,
+    hosting:$('offer-hosting').value,
+    terms:$('offer-terms').value,
+    closing:$('offer-closing').value
+  };
+}
+function renderOfferDocument(off){
+  const p=off.profileSnapshot||{};
+  const once=off.itemsOnce||[];
+  const rec=off.itemsRecurring||[];
+  const sumOnce=once.reduce((s,it)=>s+((it.qty||0)*(it.price||0)),0);
+  const sumRec=rec.reduce((s,it)=>s+((it.qty||0)*(it.price||0)),0);
+  const issuerAddr=[p.street,[p.zip,p.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  const taxLine=p.taxNumber?('Steuernummer: '+escI(p.taxNumber)):(p.vatId?('USt-IdNr.: '+escI(p.vatId)):'');
+  const senderLine=[p.company,p.legalForm,issuerAddr].filter(Boolean).map(escI).join(' · ');
+  const itemRows=arr=>arr.map((it,i)=>`<tr><td class="doc-pos">${i+1}</td><td class="ta-r">${fmtQty(it.qty)}</td><td>${nl2br(it.desc)}</td><td class="ta-r">${eur(it.price)}</td><td class="ta-r">${eur((it.qty||0)*(it.price||0))}</td></tr>`).join('');
+  const onceTable=once.length?`<table class="doc-table"><thead><tr><th class="doc-pos">Pos.</th><th class="ta-r">Menge</th><th>Beschreibung</th><th class="ta-r">Einzelpreis</th><th class="ta-r">Summe</th></tr></thead><tbody>${itemRows(once)}</tbody></table><div class="doc-subtotal"><span class="doc-subtotal-lbl">Zwischensumme einmalig</span><span class="doc-subtotal-val">${eur(sumOnce)}</span></div>`:'';
+  const recTable=rec.length?`<div class="doc-section-title">Laufende Kosten (pro Monat)</div><table class="doc-table"><thead><tr><th class="doc-pos">Pos.</th><th class="ta-r">Menge</th><th>Beschreibung</th><th class="ta-r">Preis/Monat</th><th class="ta-r">Summe/Monat</th></tr></thead><tbody>${itemRows(rec)}</tbody></table><div class="doc-subtotal"><span class="doc-subtotal-lbl">Zwischensumme laufend / Monat</span><span class="doc-subtotal-val">${eur(sumRec)}</span></div>`:'';
+  const seoOn=(off.seo||[]).filter(s=>s.checked);
+  const seoBlock=seoOn.length?`<div class="doc-section-title">Leistungen im Detail</div><ul class="doc-checklist">${seoOn.map(s=>'<li>'+escI(s.label)+'</li>').join('')}</ul>`:'';
+  const cond=[];
+  if(off.schedule) cond.push(['Ablauf / Zeitplan',off.schedule]);
+  if(off.payment) cond.push(['Zahlung',off.payment]);
+  if(off.cooperation) cond.push(['Mitwirkung',off.cooperation]);
+  if(off.rights) cond.push(['Nutzungsrechte',off.rights]);
+  if(off.hosting) cond.push(['Hosting / Domain',off.hosting]);
+  if(off.terms) cond.push(['AGB',off.terms]);
+  const condBlock=cond.length?`<div class="doc-section-title">Konditionen</div>${cond.map(([t,v])=>`<div style="margin:8px 0"><div class="doc-strong" style="font-size:12px">${escI(t)}</div><div style="font-size:12px;color:#333">${nl2br(v)}</div></div>`).join('')}`:'';
+  const bank=[p.bankHolder&&('Kontoinhaber: '+escI(p.bankHolder)),p.iban&&('IBAN: '+escI(p.iban)),p.bic&&('BIC: '+escI(p.bic)),p.bank&&('Bank: '+escI(p.bank))].filter(Boolean);
+  const contact=[p.email,p.phone].filter(Boolean).map(escI).join(' · ');
+  const eff=effectiveStatus(off);
+  const doc=$('offer-document');
+  doc.dataset.number=off.number||'';
+  doc.innerHTML=`
+    <div class="doc-head">
+      <div class="doc-logo">${p.logo?`<img src="${p.logo}">`:''}</div>
+      <div class="doc-issuer">
+        <div class="doc-company">${escI(p.company||'')}${p.legalForm?' <span class="doc-legal">'+escI(p.legalForm)+'</span>':''}</div>
+        ${issuerAddr?`<div>${escI(issuerAddr)}</div>`:''}
+        ${p.email?`<div>${escI(p.email)}</div>`:''}
+        ${p.phone?`<div>${escI(p.phone)}</div>`:''}
+        ${taxLine?`<div>${taxLine}</div>`:''}
+      </div>
+    </div>
+    <div style="font-size:9px;color:#999;border-bottom:1px solid #eee;padding-bottom:4px;margin-bottom:18px">${senderLine}</div>
+    <div class="doc-recipient-row">
+      <div class="doc-recipient">
+        <div class="doc-label">Angebot für</div>
+        <div class="doc-strong">${escI(off.client&&off.client.name||'')}</div>
+        ${off.client&&off.client.contact?`<div>z. Hd. ${escI(off.client.contact)}</div>`:''}
+        <div>${nl2br(off.client&&off.client.address||'')}</div>
+        ${off.client&&off.client.email?`<div>${escI(off.client.email)}</div>`:''}
+      </div>
+      <div class="doc-meta">
+        <div><span>Angebotsnummer</span><strong>${escI(off.number||'(beim Speichern)')}</strong></div>
+        <div><span>Angebotsdatum</span><strong>${fmtDate(off.offerDate)}</strong></div>
+        <div><span>Gültig bis</span><strong>${fmtDate(off.validUntil)}</strong></div>
+        <div><span>Status</span><strong><span class="doc-status">${escI(eff)}</span></strong></div>
+      </div>
+    </div>
+    <h1 class="doc-title">Angebot</h1>
+    ${off.subject?`<div class="doc-period" style="font-style:normal;font-weight:700;color:#111;font-size:14px">${escI(off.subject)}</div>`:''}
+    ${off.intro?`<p class="doc-text">${nl2br(off.intro)}</p>`:''}
+    ${off.benefit?`<p class="doc-text" style="color:#444">${nl2br(off.benefit)}</p>`:''}
+    ${onceTable}
+    ${recTable}
+    <div class="doc-summary-box">
+      <div><span>Einmalige Investition</span><span class="doc-sum-once">${eur(sumOnce)}</span></div>
+      ${sumRec>0?`<div><span>Laufende Kosten</span><span class="doc-sum-rec">${eur(sumRec)} / Monat</span></div>`:''}
+    </div>
+    ${seoBlock}
+    ${condBlock}
+    <div class="doc-hint">Alle Preise verstehen sich als Endpreise. Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</div>
+    <div class="doc-accept">
+      <div class="doc-accept-cta">Angebot annehmen</div>
+      <div style="font-size:12px;color:#333">Mit Ihrer Unterschrift nehmen Sie dieses Angebot verbindlich an. Wir starten dann zeitnah mit der Umsetzung.</div>
+      <div class="doc-sign-row"><div>Ort, Datum</div><div>Unterschrift Auftraggeber</div></div>
+    </div>
+    ${off.closing?`<p class="doc-text">${nl2br(off.closing)}</p>`:''}
+    <div class="doc-foot"><div>${escI(p.company||'')}${contact?' · '+contact:''}</div>${bank.length?`<div>${bank.join(' · ')}</div>`:''}</div>
+  `;
+}
+function updateOfferPreview(){ renderOfferDocument(buildOfferFromForm()); }
+function updateOfferActions(){ const can=!!$('offer-document').dataset.number; $('offer-print').disabled=!can; $('offer-pdf').disabled=!can; $('offer-to-invoice').disabled=!can; }
+function onOfferEdit(){ ofViewing=false; ofCurrentNumber=null; $('offer-current-num').value=''; updateOfferPreview(); updateOfferActions(); }
+
+// ── Historie ──
+function renderOfferHistory(){
+  const c=$('offer-history-list'); if(!c) return;
+  const list=ofOffers.slice().sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+  if(!list.length){ c.innerHTML='<div style="color:var(--muted);font-size:.75rem;padding:6px 0">Noch keine Angebote gespeichert</div>'; return; }
+  c.innerHTML='';
+  list.forEach(off=>{
+    const once=(off.itemsOnce||[]).reduce((s,it)=>s+((it.qty||0)*(it.price||0)),0);
+    const eff=effectiveStatus(off);
+    const div=document.createElement('div'); div.className='file-item';
+    div.innerHTML=`<div class="file-icon">📄</div><div class="file-info"><div class="file-name">${escI(off.number)} · ${escI(off.client&&off.client.name||'—')}</div><div class="file-meta">${escI(off.subject||'')} · ${fmtDate(off.offerDate)} · gültig bis ${fmtDate(off.validUntil)} · ${eur(once)}</div></div><span class="offer-badge s-${escA(eff)}">${escI(eff)}</span><div class="file-actions"><button class="file-btn" data-act="view">Ansehen</button><button class="file-btn" data-act="dup">Vorlage</button><button class="file-btn" data-act="inv">→ Rechnung</button></div>`;
+    div.querySelector('[data-act="view"]').onclick=()=>viewOffer(off);
+    div.querySelector('[data-act="dup"]').onclick=()=>duplicateOffer(off);
+    div.querySelector('[data-act="inv"]').onclick=()=>{ if(window._invLoadFromOffer) window._invLoadFromOffer(off); };
+    c.appendChild(div);
+  });
+}
+function fillFormFromOffer(off,asTemplate){
+  $('offer-client-name').value=off.client&&off.client.name||'';
+  $('offer-client-address').value=off.client&&off.client.address||'';
+  $('offer-client-contact').value=off.client&&off.client.contact||'';
+  $('offer-client-email').value=off.client&&off.client.email||'';
+  $('offer-date').value=asTemplate?todayISO():(off.offerDate||todayISO());
+  $('offer-valid').value=asTemplate?addDaysISO(todayISO(),14):(off.validUntil||addDaysISO(todayISO(),14));
+  $('offer-subject').value=off.subject||'';
+  $('offer-intro').value=off.intro||'';
+  $('offer-benefit').value=off.benefit||'';
+  $('offer-schedule').value=off.schedule||'';
+  $('offer-payment').value=off.payment||'';
+  $('offer-cooperation').value=off.cooperation||'';
+  $('offer-rights').value=off.rights||'';
+  $('offer-hosting').value=off.hosting||'';
+  $('offer-terms').value=off.terms||'';
+  $('offer-closing').value=off.closing||'';
+  $('offer-status-select').value=(asTemplate?'Entwurf':(off.status&&STATUSES.includes(off.status)?off.status:'Entwurf'));
+  ofOnce=(off.itemsOnce||[]).map(it=>({qty:it.qty,desc:it.desc,price:it.price}));
+  ofRec=(off.itemsRecurring||[]).map(it=>({qty:it.qty,desc:it.desc,price:it.price}));
+  ofSeo=(off.seo&&off.seo.length)?off.seo.map(s=>({label:s.label,checked:s.checked})):defaultSeo();
+  renderOfferItems(); renderSeoList();
+}
+function viewOffer(off){ fillFormFromOffer(off,false); ofViewing=true; ofCurrentNumber=off.number; $('offer-current-num').value=off.number||''; renderOfferDocument(off); updateOfferActions(); document.getElementById('main').scrollTop=0; ofStatus('Angebot '+off.number+' geöffnet.',false); }
+function duplicateOffer(off){ fillFormFromOffer(off,true); ofViewing=false; ofCurrentNumber=null; $('offer-current-num').value=''; updateOfferPreview(); updateOfferActions(); document.getElementById('main').scrollTop=0; ofStatus('Als Vorlage übernommen — „Speichern & Nr. vergeben“ klicken.',false); }
+
+// ── Kunden-Picker (aus Angeboten + Rechnungen) ──
+function refreshClientPicker(){
+  const sel=$('offer-client-pick'); if(!sel) return;
+  const seen=new Set(); const clients=[];
+  const add=c=>{ if(c&&c.name){ const k=c.name+'|'+(c.address||''); if(!seen.has(k)){ seen.add(k); clients.push(c); } } };
+  ofOffers.forEach(o=>add(o.client));
+  if(window._invClients) window._invClients().forEach(add);
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— neuer Kunde —</option>'+clients.map((c,i)=>`<option value="${i}">${escI(c.name)}${c.contact?' ('+escI(c.contact)+')':''}</option>`).join('');
+  sel._clients=clients;
+  if(cur) sel.value=cur;
+}
+window._offerRefreshClients=refreshClientPicker;
+
+// ── PartyKit-Hooks ──
+window._offerSetList=function(list){ ofOffers=Array.isArray(list)?list.slice():[]; localStorage.setItem('bg-offers',JSON.stringify(ofOffers)); renderOfferHistory(); refreshClientPicker(); };
+window._offerOnCreated=function(off){
+  if(!off||!off.number) return;
+  if(!ofOffers.some(x=>x.number===off.number)) ofOffers.push(off);
+  else ofOffers=ofOffers.map(x=>x.number===off.number?off:x);
+  localStorage.setItem('bg-offers',JSON.stringify(ofOffers));
+  ofViewing=true; ofCurrentNumber=off.number; $('offer-current-num').value=off.number;
+  renderOfferDocument(off); renderOfferHistory(); refreshClientPicker(); updateOfferActions();
+  ofStatus('Angebot '+off.number+' gespeichert ✓',false);
+};
+
+// Geteiltes Profil: Vorschau aktualisieren (auch wenn Tab nicht sichtbar)
+BG.onProfile(()=>{ if(!ofViewing) updateOfferPreview(); });
+
+// ── Events ──
+$('offer-goto-profile').addEventListener('click',()=>{ document.querySelector('.nav-item[data-tool="invoice"]')?.click(); document.getElementById('inv-company')?.scrollIntoView({behavior:'smooth',block:'center'}); });
+$('offer-client-pick').addEventListener('change',function(){ const c=this._clients&&this._clients[+this.value]; if(!c) return; $('offer-client-name').value=c.name||''; $('offer-client-address').value=c.address||''; $('offer-client-contact').value=c.contact||''; $('offer-client-email').value=c.email||''; onOfferEdit(); });
+
+['offer-client-name','offer-client-address','offer-client-contact','offer-client-email','offer-subject','offer-intro','offer-benefit','offer-schedule','offer-payment','offer-cooperation','offer-rights','offer-hosting','offer-terms','offer-closing'].forEach(id=>$(id).addEventListener('input',onOfferEdit));
+$('offer-date').addEventListener('input',onOfferEdit);
+$('offer-valid').addEventListener('input',onOfferEdit);
+$('offer-status-select').addEventListener('change',()=>{
+  const v=$('offer-status-select').value;
+  if(ofViewing && ofCurrentNumber){
+    const off=ofOffers.find(x=>x.number===ofCurrentNumber);
+    if(off){ off.status=v; renderOfferDocument(off); }
+    if(window._offerSetStatus) window._offerSetStatus(ofCurrentNumber,v);
+    ofStatus('Status aktualisiert: '+v,false);
+  } else updateOfferPreview();
+});
+
+const oneOpts='<option value="">Paket wählen …</option>'+BG.catalog.oneTime.map((p,i)=>`<option value="${i}">${escI(p.name)} — ${eur(p.price)}</option>`).join('');
+const recOpts='<option value="">Paket wählen …</option>'+BG.catalog.recurring.map((p,i)=>`<option value="${i}">${escI(p.name)} — ${eur(p.price)}/Monat</option>`).join('');
+$('offer-pkg-once').innerHTML=oneOpts;
+$('offer-pkg-rec').innerHTML=recOpts;
+$('offer-add-once').addEventListener('click',()=>{ const v=$('offer-pkg-once').value; if(v==='')return; const p=BG.catalog.oneTime[+v]; ofOnce.push({qty:1,desc:p.name+' – '+p.desc,price:p.price}); renderItemList($('offer-items-once'),ofOnce); onOfferEdit(); });
+$('offer-add-rec').addEventListener('click',()=>{ const v=$('offer-pkg-rec').value; if(v==='')return; const p=BG.catalog.recurring[+v]; ofRec.push({qty:1,desc:p.name+' – '+p.desc,price:p.price}); renderItemList($('offer-items-rec'),ofRec); onOfferEdit(); });
+$('offer-add-free-once').addEventListener('click',()=>{ ofOnce.push({qty:1,desc:'',price:0}); renderItemList($('offer-items-once'),ofOnce); onOfferEdit(); });
+$('offer-add-free-rec').addEventListener('click',()=>{ ofRec.push({qty:1,desc:'',price:0}); renderItemList($('offer-items-rec'),ofRec); onOfferEdit(); });
+
+$('offer-save').addEventListener('click',()=>{
+  if(!$('offer-client-name').value.trim()){ ofStatus('Bitte Firma / Name des Kunden angeben.',true); return; }
+  if(!$('offer-subject').value.trim()){ ofStatus('Bitte Betreff / Projekttitel angeben.',true); return; }
+  if(!ofOnce.length && !ofRec.length){ ofStatus('Bitte mindestens eine Position hinzufügen.',true); return; }
+  if(!window._offerCreate || !(window._invConnected&&window._invConnected())){ ofStatus('Keine Verbindung — Angebotsnummer kann nicht vergeben werden.',true); return; }
+  const data=buildOfferFromForm(); delete data.number;
+  ofStatus('Speichern …',false);
+  window._offerCreate(data, crypto.randomUUID());
+});
+$('offer-print').addEventListener('click',()=>{ if(!$('offer-document').dataset.number){ ofStatus('Bitte zuerst speichern.',true); return; } BG.printNode($('offer-document')); });
+$('offer-pdf').addEventListener('click',()=>{ const num=$('offer-document').dataset.number; if(!num){ ofStatus('Bitte zuerst speichern.',true); return; } ofStatus('PDF wird erstellt …',false); BG.exportPDF($('offer-document'),'Angebot_'+num+'.pdf').then(()=>ofStatus('PDF gespeichert ✓',false)).catch(()=>ofStatus('PDF-Fehler.',true)); });
+$('offer-to-invoice').addEventListener('click',()=>{ const off=buildOfferFromForm(); off.number=ofCurrentNumber; if(window._invLoadFromOffer) window._invLoadFromOffer(off); });
+
+// ── Init ──
+try{ const c=JSON.parse(localStorage.getItem('bg-offers')||'null'); if(Array.isArray(c)) ofOffers=c; }catch(e){}
+$('offer-date').value=todayISO();
+$('offer-valid').value=addDaysISO(todayISO(),14);
+ofSeo=defaultSeo();
+renderOfferItems(); renderSeoList(); renderOfferHistory(); refreshClientPicker(); updateOfferPreview(); updateOfferActions();
+}
+
+// ════════════════════════════════════════════════════
 // PARTYKIT SYNC
 // ════════════════════════════════════════════════════
 {
@@ -1205,11 +2110,19 @@ function connect() {
           if (msg.data.whiteboard) applyWhiteboard(msg.data.whiteboard);
           if (msg.data.transfer)  applyTransfer(msg.data.transfer);
           if (msg.data.vault)     applyVault(msg.data.vault);
+          if (msg.data.profile)   applyProfile(msg.data.profile);
+          if (msg.data.invoices)  applyInvoices(msg.data.invoices);
+          if (msg.data.offers)    applyOffers(msg.data.offers);
         } else if (msg.type === 'kanban')    { applyKanban(msg.data); }
           else if (msg.type === 'checklist') { applyChecklist(msg.data); }
           else if (msg.type === 'whiteboard'){ applyWhiteboard(msg.data); }
           else if (msg.type === 'transfer')  { applyTransfer(msg.data); }
           else if (msg.type === 'vault')     { applyVault(msg.data); }
+          else if (msg.type === 'profile')   { applyProfile(msg.data); }
+          else if (msg.type === 'invoices')  { applyInvoices(msg.data); }
+          else if (msg.type === 'invoice:created') { applyInvoiceCreated(msg.data, msg.reqId); }
+          else if (msg.type === 'offers')    { applyOffers(msg.data); }
+          else if (msg.type === 'offer:created') { applyOfferCreated(msg.data, msg.reqId); }
 
         ignoreRemote = false;
       } catch(err) { ignoreRemote = false; }
@@ -1249,6 +2162,28 @@ function applyWhiteboard(data) {
 // ── Transfer / Vault Apply ────────────────────────
 function applyTransfer(data) { if (window._pkSetTransfer) window._pkSetTransfer(data); }
 function applyVault(data)    { if (window._pkSetVault)    window._pkSetVault(data); }
+
+// ── Profil / Rechnung / Angebot Apply ─────────────
+function applyProfile(data)  { if (window.BG) BG.setProfile(data, {source:'remote'}); }
+function applyInvoices(data) { if (window._invSetInvoices) window._invSetInvoices(data); }
+function applyInvoiceCreated(data, reqId) { if (window._invOnCreated) window._invOnCreated(data, reqId); }
+function applyOffers(data)   { if (window._offerSetList) window._offerSetList(data); }
+function applyOfferCreated(data, reqId) { if (window._offerOnCreated) window._offerOnCreated(data, reqId); }
+
+// Verbindungs-Check + dedizierte Sender (mit reqId, ohne ignoreRemote-Gate)
+window._invConnected = () => wsReady;
+window._invCreate = function(data, reqId) {
+  if (!wsReady) return;
+  ws.send(JSON.stringify({ type: 'invoice:create', data, reqId }));
+};
+window._offerCreate = function(data, reqId) {
+  if (!wsReady) return;
+  ws.send(JSON.stringify({ type: 'offer:create', data, reqId }));
+};
+window._offerSetStatus = function(number, status) {
+  if (!wsReady) return;
+  ws.send(JSON.stringify({ type: 'offer:status', data: { number, status } }));
+};
 
 // Expose push functions globally
 window.pkSend = pkSend;
